@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="wrapper">
-      <h1>
+      <h1 style="cursor: pointer;" @click="resetAll">
         Find Your Football Club
       </h1>
       <div class="order-wrapper">
@@ -37,10 +37,10 @@
           </a-form-model-item>
         </a-form-model>
 
-        <!-- <div> -->
+        <div v-if="isTeam">
           <a-row type="flex" justify="space-between" align="middle">
             <a-col v-for="team in listTeam" :key="team.id" :span="6" style="margin-bottom:5em;">
-              <a-card hoverable style="width: 300px; padding:1em !important;">
+              <a-card hoverable style="width: 300px; padding:1em !important;" @click="detailTeam(team.id)">
                 <img
                   slot="cover"
                   alt="example"
@@ -49,13 +49,63 @@
                 />
                 <a-card-meta :title="team.name">
                   <template slot="description">
-                    {{team.website}}
+                    {{team.venue}}
                   </template>
                 </a-card-meta>
               </a-card>
             </a-col>
           </a-row>
-        <!-- </div> -->
+        </div>
+        <div v-if="isSquad">
+          <a-row type="flex" justify="space-between">
+            <a-col :span="6">
+              <img :src="listDetailTeam.crestUrl" alt="">
+            </a-col>
+            <a-col :span="18">
+              <a-row>
+                <span style="font-size:3rem">{{ listDetailTeam.name }}</span>
+              </a-row>
+              <a-row>
+                <span style="font-size:2rem">{{ listDetailTeam.venue }}</span>
+              </a-row>
+              <a-row>
+                <span style="font-size:2rem">{{ listDetailTeam.website }}</span>
+              </a-row>
+              <a-row>
+                <span style="font-size:2rem">{{ listDetailTeam.address }}</span>
+              </a-row>
+            </a-col>
+          </a-row>
+
+          <a-row type="flex" style="margin-top:2em;">
+            <a-col v-for="squad in listDetailTeam.squad" :key="squad.id" :span="6" style="margin-bottom:3em;">
+              <a-card hoverable style="width: 300px">
+                <a-row>
+                  <a-col :span="20">
+                    <span style="display:block">
+                      {{ squad.shirtNumber }}
+                    </span>
+                    <span style="display:block">
+                      {{ squad.name }}
+                    </span>
+                    <span style="display:block">
+                      {{ squad.nationality }}
+                    </span>
+                    <span style="display:block">
+                      {{ squad.position }}
+                    </span>
+                  </a-col>
+                  <a-col :span="4">
+                    <img
+                      width="40px"
+                      src="~/assets/images/person_thumbnail.jpeg"
+                    />
+                  </a-col>
+                </a-row>
+              </a-card>
+            </a-col>
+          </a-row>
+        </div>
       </div>
     </div>
   </div>
@@ -66,6 +116,9 @@ export default {
   data () {
     return {
       listTeam: [],
+      listDetailTeam: {},
+      isSquad: false,
+      isTeam:false,
       form : {
         layout: 'vertical',
         area: undefined,
@@ -82,14 +135,54 @@ export default {
     this.fetchData()
   },
   methods: {
+    detailTeam (id){
+      this.isTeam = false
+      this.isSquad = true
+      this.fetchDetailTeam(id)
+    },
     inputArea(){
       this.form.competitionDisable = false
+      this.isSquad = false
+      this.isTeam = false
       this.fetchCompetition()
     },
     inputCompetition(){
-      this.fetchTeam()
+      this.isTeam = true
+      this.isSquad = false
+      this.fetchAllTeam()
     },
-    fetchTeam(){
+    fetchDetailTeam(id){
+      const unwatch = this.$store.watch(
+          state => state.Football,
+          () => {
+            const {
+              success,
+              error,
+              message,
+              listDetailTeam
+            } = this.$store.state.Football
+
+            if (success) {
+              unwatch()
+              this.listDetailTeam = listDetailTeam
+              console.log(this.listDetailTeam)
+            }
+
+            if (error) {
+              unwatch()
+              this.$notification.error({
+                message: 'Terjadi Kesalahan',
+                description: message
+              })
+            }
+          },
+          {
+            deep: true
+          }
+        )
+        this.$store.dispatch('Football/fetchTeamById', id)
+    },
+    fetchAllTeam(){
       const unwatch = this.$store.watch(
           state => state.Football,
           () => {
@@ -119,7 +212,7 @@ export default {
             deep: true
           }
         )
-        this.$store.dispatch('Football/fetchTeam', this.form.competition)
+        this.$store.dispatch('Football/fetchAllTeam', this.form.competition)
     },
     fetchCompetition(){
       console.log(this.form.area)
@@ -183,6 +276,24 @@ export default {
           }
         )
         this.$store.dispatch('Football/fetchArea')
+    },
+    resetAll(){
+      this.listTeam= []
+      this.listDetailTeam= {}
+      this.isSquad= false
+      this.isTeam=false
+      this.form = {
+        layout: 'vertical',
+        area: undefined,
+        competition: undefined,
+        competitionDisable: true
+      }
+      this.option= {
+        listArea: [],
+        listCompetition: []
+      }
+
+      this.fetchData()
     }
   },
 }
@@ -192,6 +303,7 @@ export default {
 .wrapper {
   padding: 2em 4em;
   background-color: #e5e5e5;
+  height: 100vh;
 }
 .order-wrapper {
   padding: 2em;

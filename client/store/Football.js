@@ -6,7 +6,8 @@ export const state = () => ({
     error: false,
     listArea: [],
     listCompetition: [],
-    listTeam: []
+    listTeam: [],
+    listDetailTeam: []
 })
 
 export const actions = {
@@ -34,7 +35,19 @@ export const actions = {
             commit('ERROR', message)
           })
     },
-    fetchTeam ({ commit }, data) {
+    fetchTeamById ({ commit }, data) {
+        commit('LOADING')
+        this.$axios
+        .get(`${apiURL}teams/${data}`)
+          .then((response) => {
+            commit('SUCCESS_FETCH_TEAM_BY_ID', response.data)
+          })
+          .catch((error) => {
+            const message = apiHelper.handleError(error)
+            commit('ERROR', message)
+          })
+    },
+    fetchAllTeam ({ commit }, data) {
         commit('LOADING')
         this.$axios
         .get(`${apiURL}competitions/${data}/teams`)
@@ -87,5 +100,12 @@ export const mutations = {
         state.loading = false
         state.message = ''
         state.listTeam = data.teams
+    },
+    SUCCESS_FETCH_TEAM_BY_ID (state, data) {
+        state.success = true
+        state.error = false
+        state.loading = false
+        state.message = ''
+        state.listDetailTeam = data
     },
 }
